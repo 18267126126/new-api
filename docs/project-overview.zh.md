@@ -5,7 +5,7 @@
 | **文档标题** | New API 项目设计思路与工作流程 |
 | **作者** | 陈云杰 |
 | **编写日期** | 2026-06-24 |
-| **文档版本** | 1.0.0 |
+| **文档版本** | 1.1.0 |
 | **适用代码版本** | New API `v0.0.0`（`common/constants.go`，构建时自动注入） |
 | **代码快照** | Git commit `055c59fa9` |
 
@@ -221,6 +221,7 @@ Channel（渠道）
   └── Setting（系统提示词、透传开关等）
 
 Log（消费日志）
+  ├── token_name（令牌名称，见下文「数据看板 Tokens 消耗」）
   └── prompt_tokens、completion_tokens、quota、channel_id ...
 ```
 
@@ -232,7 +233,9 @@ Log（消费日志）
 
 ---
 
-## 七、两类 API 路径
+## 七、两类 API 路径与地址填写说明
+
+### 1. 路径分类
 
 | 路径前缀 | 用途 | 调用方 |
 |---------|------|--------|
@@ -240,11 +243,78 @@ Log（消费日志）
 | `/api/*` | **管理 API**，用户 / 渠道 / 日志 / 配置 | 管理后台前端 |
 | `/` | **Web UI**，嵌入的 React 管理界面 | 浏览器 |
 
-> 开发模式下，前端 dev 服务器（如 `:5173`）通常只代理 `/api`，**不代理 `/v1`**。模型调用应直接访问后端（如 `:3000`）。
+### 2. 客户端应填写的 API 地址（调用模型）
+
+客户端（Python、Cursor、OpenAI SDK 等）对接的是 **本服务对外暴露的 Relay 根地址**，不是上游 DashScope / OpenAI 的地址。
+
+| 场景 | Base URL（OpenAI SDK 的 `base_url`） | 完整 Chat 端点 |
+|------|--------------------------------------|----------------|
+| 本地后端 | `http://127.0.0.1:3000/v1` | `http://127.0.0.1:3000/v1/chat/completions` |
+| 生产部署 | `https://你的域名/v1` | `https://你的域名/v1/chat/completions` |
+
+**鉴权：** `Authorization: Bearer sk-xxx`（在管理后台「令牌」页创建，`sk-` 前缀由系统生成）。
+
+**常见填法示例：**
+
+```python
+# OpenAI Python SDK
+client = OpenAI(
+    api_key="sk-xxx",                        # 本项目的令牌，不是上游 Key
+    base_url="http://127.0.0.1:3000/v1",     # 本项目地址 + /v1
+)
+```
+
+```bash
+# curl
+curl http://127.0.0.1:3000/v1/chat/completions \
+  -H "Authorization: Bearer sk-xxx" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen3.6-27b","messages":[{"role":"user","content":"hi"}]}'
+```
+
+> **开发注意：** 前端 dev 服务器（`:5173`）通常只代理 `/api`，**不代理 `/v1`**。模型调用必须直连后端（`:3000`），或通过生产环境同一域名访问。
+
+### 3. 系统设置中的「服务器地址」（ServerAddress）
+
+路径：**系统设置 → 系统信息 → 服务器地址**
+
+| 项 | 说明 |
+|----|------|
+| **填什么** | 站点对外的完整 URL，如 `https://api.example.com`（不要末尾 `/`） |
+| **用途** | OAuth 回调、支付/Webhook、CC Switch 导入、定价页代码示例等 |
+| **未填写时** | 前端回退为当前浏览器 `window.location.origin`（本地即 `http://localhost:3000`） |
+
+**与客户端 Base URL 的关系：**
+
+- `ServerAddress` = 站点根，如 `https://api.example.com`
+- 客户端 Base URL = `{ServerAddress}/v1`
+- 管理 API = `{ServerAddress}/api/...`
+
+### 4. 渠道 Base URL（易混淆，勿填错）
+
+| 配置位置 | 填什么 | 示例 |
+|---------|--------|------|
+| **渠道 → Base URL** | 上游厂商 API 根地址 | `https://dashscope.aliyuncs.com` |
+| **客户端 / SDK** | **本项目** Relay 地址 | `http://127.0.0.1:3000/v1` |
+
+渠道 Base URL 仅用于网关转发到上游，**不会**发给业务客户端。
 
 ---
 
-## 八、Adaptor 接口（扩展渠道的关键）
+## 八、数据看板「Tokens 消耗」中的令牌名称
+
+「Tokens 消耗」图表按 **`logs.token_name`** 聚合（见 `model/usedata_token.go`）。名称来源如下：
+
+| 来源 | `token_name` 取值 | 说明 |
+|------|-------------------|------|
+| 正常 API 调用 | 令牌管理里创建的 **名称** | 请求经 `middleware/auth.go` 写入 Context，计费日志记录 `token.Name` |
+| 渠道测试 | 固定 **`模型测试`** | 管理后台「渠道 → 测试」时，`controller/channel-test.go` 写死该名称 |
+
+**本地库示例：** 若看到 `test` 与 `模型测试` 两条曲线——`test` 来自名为 `test` 的用户令牌；`模型测试` 来自某次渠道连通性测试产生的 1 条消费日志（模型 `qwen3.6-27b`）。可在 **使用日志** 页按 `token_name` 筛选核实。
+
+---
+
+## 九、Adaptor 接口（扩展渠道的关键）
 
 每个渠道实现 `relay/channel/adapter.go` 中的 `Adaptor` 接口：
 
@@ -261,7 +331,7 @@ DoResponse(...)               // 解析响应，返回 usage
 
 ---
 
-## 九、计费流程
+## 十、计费流程
 
 ```
 请求到达
@@ -277,7 +347,7 @@ DoResponse(...)               // 解析响应，返回 usage
 
 ---
 
-## 十、前端与管理后台
+## 十一、前端与管理后台
 
 - 源码：`web/default/`（React 19 + Rsbuild + i18n）
 - 生产构建后由 Go `embed` 进二进制，访问 `http://localhost:3000` 即可
@@ -285,7 +355,7 @@ DoResponse(...)               // 解析响应，返回 usage
 
 ---
 
-## 十一、本地开发典型配置示例
+## 十二、本地开发典型配置示例
 
 ```
 用户 Token: sk-xxx              → New API 鉴权
@@ -299,7 +369,7 @@ web dev :5173                   → 管理界面，不转发 /v1
 
 ---
 
-## 十二、设计亮点小结
+## 十三、设计亮点小结
 
 | 设计点 | 价值 |
 |--------|------|
@@ -312,7 +382,7 @@ web dev :5173                   → 管理界面，不转发 /v1
 
 ---
 
-## 十三、延伸阅读
+## 十四、延伸阅读
 
 | 主题 | 路径 |
 |------|------|
@@ -330,3 +400,4 @@ web dev :5173                   → 管理界面，不转发 /v1
 | 版本 | 日期 | 作者 | 说明 |
 |------|------|------|------|
 | 1.0.0 | 2026-06-24 | 陈云杰 | 初版：项目定位、架构、Chat 请求全流程 |
+| 1.1.0 | 2026-06-24 | 陈云杰 | 补充 API 地址填写说明、Tokens 消耗 token_name 来源 |

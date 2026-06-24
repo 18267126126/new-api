@@ -43,6 +43,7 @@ import {
   type DashboardChartPreferences,
   type DashboardFilters,
   type QuotaDataItem,
+  type TokenUsageDataItem,
 } from './types'
 
 const route = getRouteApi('/_authenticated/dashboard/$section')
@@ -62,6 +63,12 @@ const LazyModelCharts = lazy(() =>
 const LazyConsumptionDistributionChart = lazy(() =>
   import('./components/models/consumption-distribution-chart').then((m) => ({
     default: m.ConsumptionDistributionChart,
+  }))
+)
+
+const LazyTokenConsumptionChart = lazy(() =>
+  import('./components/models/token-consumption-chart').then((m) => ({
+    default: m.TokenConsumptionChart,
   }))
 )
 
@@ -151,6 +158,7 @@ export function Dashboard() {
     DASHBOARD_DEFAULT_SECTION) as DashboardSectionId
 
   const [modelData, setModelData] = useState<QuotaDataItem[]>([])
+  const [tokenData, setTokenData] = useState<TokenUsageDataItem[]>([])
   const [dataLoading, setDataLoading] = useState(false)
   const [chartPreferences, setChartPreferences] =
     useState<DashboardChartPreferences>(() => getSavedChartPreferences())
@@ -167,8 +175,9 @@ export function Dashboard() {
   }, [chartPreferences])
 
   const handleDataUpdate = useCallback(
-    (data: QuotaDataItem[], loading: boolean) => {
+    (data: QuotaDataItem[], tokenData: TokenUsageDataItem[], loading: boolean) => {
       setModelData(data)
+      setTokenData(tokenData)
       setDataLoading(loading)
     },
     []
@@ -265,12 +274,14 @@ export function Dashboard() {
               )}
               <FadeIn delay={0.1}>
                 <Suspense fallback={<ModelChartsFallback />}>
-                  <LazyConsumptionDistributionChart
-                    data={modelData}
-                    loading={dataLoading}
-                    defaultChartType={
-                      chartPreferences.consumptionDistributionChart
-                    }
+                  <LazyTokenConsumptionChart
+                    modelData={modelData}
+                    tokenData={tokenData}
+                    modelLoading={dataLoading}
+                    tokenLoading={dataLoading}
+                    filters={modelFilters}
+                    defaultDimension={chartPreferences.tokenConsumptionDimension}
+                    defaultChartTab={chartPreferences.tokenConsumptionChart}
                     timeGranularity={
                       modelFilters.time_granularity || DEFAULT_TIME_GRANULARITY
                     }
@@ -283,6 +294,20 @@ export function Dashboard() {
                     data={modelData}
                     loading={dataLoading}
                     defaultChartTab={chartPreferences.modelAnalyticsChart}
+                    timeGranularity={
+                      modelFilters.time_granularity || DEFAULT_TIME_GRANULARITY
+                    }
+                  />
+                </Suspense>
+              </FadeIn>
+              <FadeIn delay={0.2}>
+                <Suspense fallback={<ModelChartsFallback />}>
+                  <LazyConsumptionDistributionChart
+                    data={modelData}
+                    loading={dataLoading}
+                    defaultChartType={
+                      chartPreferences.consumptionDistributionChart
+                    }
                     timeGranularity={
                       modelFilters.time_granularity || DEFAULT_TIME_GRANULARITY
                     }

@@ -44,11 +44,15 @@ import {
   MODEL_ANALYTICS_CHART_OPTIONS,
   TIME_GRANULARITY_OPTIONS,
   TIME_RANGE_PRESETS,
+  TOKEN_CONSUMPTION_CHART_OPTIONS,
+  TOKEN_CONSUMPTION_DIMENSION_OPTIONS,
 } from '@/features/dashboard/constants'
 import type {
   ConsumptionDistributionChartType,
   DashboardChartPreferences,
   ModelAnalyticsChartTab,
+  TokenConsumptionChartTab,
+  TokenConsumptionDimensionTab,
 } from '@/features/dashboard/types'
 
 interface ModelsChartPreferencesProps {
@@ -182,6 +186,74 @@ export function ModelsChartPreferences(props: ModelsChartPreferencesProps) {
               <SelectContent alignItemWithTrigger={false}>
                 <SelectGroup>
                   {CONSUMPTION_DISTRIBUTION_CHART_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {t(option.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className='grid gap-2'>
+            <Label htmlFor='token-consumption-dimension'>
+              {t('Default token consumption dimension')}
+            </Label>
+            <Select
+              items={[
+                ...TOKEN_CONSUMPTION_DIMENSION_OPTIONS.map((option) => ({
+                  value: option.value,
+                  label: t(option.labelKey),
+                })),
+              ]}
+              value={draft.tokenConsumptionDimension}
+              onValueChange={(value) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  tokenConsumptionDimension: value as TokenConsumptionDimensionTab,
+                }))
+              }
+            >
+              <SelectTrigger id='token-consumption-dimension'>
+                <SelectValue placeholder={t('Select default dimension')} />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectGroup>
+                  {TOKEN_CONSUMPTION_DIMENSION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {t(option.labelKey)}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className='grid gap-2'>
+            <Label htmlFor='token-consumption-chart'>
+              {t('Default token consumption chart')}
+            </Label>
+            <Select
+              items={[
+                ...TOKEN_CONSUMPTION_CHART_OPTIONS.map((option) => ({
+                  value: option.value,
+                  label: t(option.labelKey),
+                })),
+              ]}
+              value={draft.tokenConsumptionChart}
+              onValueChange={(value) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  tokenConsumptionChart: value as TokenConsumptionChartTab,
+                }))
+              }
+            >
+              <SelectTrigger id='token-consumption-chart'>
+                <SelectValue placeholder={t('Select default chart')} />
+              </SelectTrigger>
+              <SelectContent alignItemWithTrigger={false}>
+                <SelectGroup>
+                  {TOKEN_CONSUMPTION_CHART_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {t(option.labelKey)}
                     </SelectItem>

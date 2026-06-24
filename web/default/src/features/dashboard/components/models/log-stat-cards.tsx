@@ -31,11 +31,16 @@ import {
 import type {
   QuotaDataItem,
   DashboardFilters,
+  TokenUsageDataItem,
 } from '@/features/dashboard/types'
 
 interface LogStatCardsProps {
   filters?: DashboardFilters
-  onDataUpdate?: (data: QuotaDataItem[], loading: boolean) => void
+  onDataUpdate?: (
+    data: QuotaDataItem[],
+    tokenData: TokenUsageDataItem[],
+    loading: boolean
+  ) => void
 }
 
 export function LogStatCards(props: LogStatCardsProps) {
@@ -60,7 +65,7 @@ export function LogStatCards(props: LogStatCardsProps) {
     setLoading(true)
 
     setError(false)
-    onDataUpdate?.([], true)
+    onDataUpdate?.([], [], true)
 
     const timeRange = computeTimeRange(
       getDefaultDays(filters?.time_granularity),
@@ -74,14 +79,15 @@ export function LogStatCards(props: LogStatCardsProps) {
       .then((res) => {
         if (abortController.signal.aborted) return
         const data = res?.data || []
+        const tokenData = res?.token_data || []
         setStats(calculateDashboardStats(data))
-        onDataUpdate?.(data, false)
+        onDataUpdate?.(data, tokenData, false)
       })
       .catch(() => {
         if (abortController.signal.aborted) return
         setStats(null)
         setError(true)
-        onDataUpdate?.([], false)
+        onDataUpdate?.([], [], false)
       })
       .finally(() => {
         if (!abortController.signal.aborted) {
