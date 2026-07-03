@@ -19,10 +19,16 @@ func GetAllQuotaDates(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	tokenDates, err := model.GetTokenUsageGroupByTokenName(0, username, startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    dates,
+		"success":    true,
+		"message":    "",
+		"data":       dates,
+		"token_data": tokenDates,
 	})
 	return
 }
@@ -59,10 +65,16 @@ func GetUserQuotaDates(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	tokenDates, err := model.GetTokenUsageGroupByTokenName(userId, "", startTimestamp, endTimestamp)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "",
-		"data":    dates,
+		"success":    true,
+		"message":    "",
+		"data":       dates,
+		"token_data": tokenDates,
 	})
 	return
 }

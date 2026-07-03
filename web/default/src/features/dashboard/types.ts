@@ -33,6 +33,12 @@ export interface QuotaDataItem {
   quota?: number
 }
 
+export interface TokenUsageDataItem {
+  token_name?: string
+  created_at: number
+  token_used?: number
+}
+
 // ============================================================================
 // Uptime Monitoring Types
 // ============================================================================
@@ -64,9 +70,15 @@ export type ConsumptionDistributionChartType = 'bar' | 'area'
 
 export type ModelAnalyticsChartTab = 'trend' | 'proportion' | 'top'
 
+export type TokenConsumptionDimensionTab = 'token' | 'model'
+
+export type TokenConsumptionChartTab = 'trend' | 'proportion' | 'top'
+
 export interface DashboardChartPreferences {
   consumptionDistributionChart: ConsumptionDistributionChartType
   modelAnalyticsChart: ModelAnalyticsChartTab
+  tokenConsumptionDimension: TokenConsumptionDimensionTab
+  tokenConsumptionChart: TokenConsumptionChartTab
   defaultTimeRangeDays: number
   defaultTimeGranularity: TimeGranularity
 }
@@ -105,6 +117,13 @@ export interface ProcessedChartData {
   spec_rank_bar: VChartSpec
   totalQuotaDisplay: string
   totalCountDisplay: string
+}
+
+export interface ProcessedTokenConsumptionChartData {
+  spec_trend: VChartSpec
+  spec_pie: VChartSpec
+  spec_rank: VChartSpec
+  totalTokensDisplay: string
 }
 
 export interface ProcessedUserChartData {

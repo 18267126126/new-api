@@ -31,6 +31,8 @@ import type {
   DashboardChartPreferences,
   DashboardFilters,
   ModelAnalyticsChartTab,
+  TokenConsumptionChartTab,
+  TokenConsumptionDimensionTab,
 } from '@/features/dashboard/types'
 
 function isTimeGranularity(value: unknown): value is TimeGranularity {
@@ -52,6 +54,18 @@ function isConsumptionDistributionChartType(
 function isModelAnalyticsChartTab(
   value: unknown
 ): value is ModelAnalyticsChartTab {
+  return value === 'trend' || value === 'proportion' || value === 'top'
+}
+
+function isTokenConsumptionDimensionTab(
+  value: unknown
+): value is TokenConsumptionDimensionTab {
+  return value === 'token' || value === 'model'
+}
+
+function isTokenConsumptionChartTab(
+  value: unknown
+): value is TokenConsumptionChartTab {
   return value === 'trend' || value === 'proportion' || value === 'top'
 }
 
@@ -113,6 +127,16 @@ export function getSavedChartPreferences(): DashboardChartPreferences {
       modelAnalyticsChart: isModelAnalyticsChartTab(parsed.modelAnalyticsChart)
         ? parsed.modelAnalyticsChart
         : fallbackPreferences.modelAnalyticsChart,
+      tokenConsumptionDimension: isTokenConsumptionDimensionTab(
+        parsed.tokenConsumptionDimension
+      )
+        ? parsed.tokenConsumptionDimension
+        : fallbackPreferences.tokenConsumptionDimension,
+      tokenConsumptionChart: isTokenConsumptionChartTab(
+        parsed.tokenConsumptionChart
+      )
+        ? parsed.tokenConsumptionChart
+        : fallbackPreferences.tokenConsumptionChart,
       defaultTimeRangeDays: isTimeRangePresetDays(parsed.defaultTimeRangeDays)
         ? parsed.defaultTimeRangeDays
         : fallbackPreferences.defaultTimeRangeDays,

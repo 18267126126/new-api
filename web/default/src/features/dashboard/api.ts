@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
-import type { QuotaDataItem, UptimeGroupResult } from './types'
+import type { QuotaDataItem, TokenUsageDataItem, UptimeGroupResult } from './types'
 
 // ============================================================================
 // Dashboard APIs
@@ -26,6 +26,12 @@ import type { QuotaDataItem, UptimeGroupResult } from './types'
 // ----------------------------------------------------------------------------
 // Quota & Usage Data
 // ----------------------------------------------------------------------------
+
+export interface QuotaDatesResponse {
+  success: boolean
+  data: QuotaDataItem[]
+  token_data?: TokenUsageDataItem[]
+}
 
 // Get user quota data within a time range
 // Admin users get all users' data by default (matching classic frontend behavior)
@@ -39,9 +45,23 @@ export async function getUserQuotaDates(
   isAdmin = false
 ) {
   const endpoint = isAdmin ? '/api/data' : '/api/data/self'
-  const res = await api.get<{ success: boolean; data: QuotaDataItem[] }>(
+  const res = await api.get<QuotaDatesResponse>(endpoint, { params })
+  return res.data
+}
+
+export async function getUserTokenUsageDates(
+  params: {
+    start_timestamp: number
+    end_timestamp: number
+    default_time?: string
+    username?: string
+  },
+  isAdmin = false
+) {
+  const endpoint = isAdmin ? '/api/data/tokens' : '/api/data/self/tokens'
+  const res = await api.get<{ success: boolean; data: TokenUsageDataItem[] }>(
     endpoint,
-    { params }
+    { params, skipErrorHandler: true }
   )
   return res.data
 }
